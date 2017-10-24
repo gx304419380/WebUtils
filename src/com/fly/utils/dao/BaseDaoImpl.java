@@ -1,7 +1,6 @@
-package com.fly.utils;
+package com.fly.utils.dao;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -12,7 +11,25 @@ import java.util.List;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.handlers.BeanHandler;
 import org.apache.commons.dbutils.handlers.BeanListHandler;
+import org.apache.commons.dbutils.handlers.ScalarHandler;
 
+import com.fly.utils.C3P0Utils;
+import com.fly.utils.PageBean;
+import com.fly.utils.annotation.Id;
+import com.fly.utils.annotation.NoneProperty;
+
+/**
+ * BaseDao的抽象实现类
+ * 包括基本的增、删、改、查、分页查询以及自定义sql查询
+ * 需要传入泛型T
+ * 1.利用反射获取泛型参数类型===>对应于表名
+ * 2.利用反射和注解获取主键Field===>对应于主键
+ * 3.利用反射获取其他字段Field===>对应于普通字段
+ * 4.拼接sql语句
+ * 5.利用反射获取对象属性值
+ * 6.拼接传入参数
+ * 7.利用DBUtils QueryRunner来执行sql语句，获取返回值
+ */
 public abstract class BaseDaoImpl<T> implements BaseDao<T> {
 
 	private Class classT;
@@ -23,7 +40,7 @@ public abstract class BaseDaoImpl<T> implements BaseDao<T> {
 		//获取泛型参数类型
 		ParameterizedType type = (ParameterizedType) this.getClass().getGenericSuperclass();
 		Type[] types = type.getActualTypeArguments();
-		 classT = (Class<T>) types[0];
+		classT = (Class) types[0];
 
 		//通过注解的方式，获取Id字段以及普通字段
 		Field[] fields = classT.getDeclaredFields();
@@ -40,13 +57,26 @@ public abstract class BaseDaoImpl<T> implements BaseDao<T> {
 	}
 
 	/**
+	 * 获取记录总数
+	 */
+	@Override
+	public int getCount() throws SQLException {
+		QueryRunner qr = new QueryRunner();
+		String sql = "select count(*) from " + classT.getSimpleName().toLowerCase();
+		System.out.println(sql);
+		Long count = (Long) qr.query(C3P0Utils.getConnnection(), sql, new ScalarHandler());
+		return count.intValue();
+	}
+
+	/**
 	 * 查询单条数据，简单
 	 */
 	@Override
 	public T getEntityById(Object id) throws SQLException {
 		QueryRunner qr = new QueryRunner();
+		//select * from table_name where id_name = ?
 		String sql = "select * from " + classT.getSimpleName().toLowerCase() + " where " + idField.getName() + " = ?";
-
+		System.out.println(sql);
 		Object[] params = {id};
 		T t = qr.query(C3P0Utils.getConnnection(), sql, new BeanHandler<T>(classT), params);
 		return t;
@@ -59,6 +89,7 @@ public abstract class BaseDaoImpl<T> implements BaseDao<T> {
 	public List<T> getAllEntities() throws SQLException {
 		QueryRunner qr = new QueryRunner();
 		String sql = "select * from " + classT.getSimpleName().toLowerCase();
+		System.out.println(sql);
 		List<T> list = qr.query(C3P0Utils.getConnnection(), sql, new BeanListHandler<T>(classT));
 		return list;
 	}
@@ -66,11 +97,23 @@ public abstract class BaseDaoImpl<T> implements BaseDao<T> {
 	 * 获取分页数据
 	 */
 	@Override
-	public List<T> getAllEntitiesForPage(PageBean<T> pageBean) throws SQLException {
+	public List<T> getEntitiesForPage(PageBean<T> pageBean) throws SQLException {
 		QueryRunner qr = new QueryRunner();
 		String sql = "select * from " + classT.getSimpleName().toLowerCase() + " limit ?,?";
+		System.out.println(sql);
 		Object[] params = {pageBean.getStartIndex(), pageBean.getPageSize()};
 		List<T> list = qr.query(C3P0Utils.getConnnection(), sql, new BeanListHandler<T>(classT), params);
+		return list;
+	}
+
+	/**
+	 * 自定义查询
+	 */
+	@Override
+	public List<T> getEntitiesBySql(String sql) throws SQLException {
+		QueryRunner qr = new QueryRunner();
+		System.out.println(sql);
+		List<T> list = qr.query(C3P0Utils.getConnnection(), sql, new BeanListHandler<T>(classT));
 		return list;
 	}
 
@@ -83,6 +126,7 @@ public abstract class BaseDaoImpl<T> implements BaseDao<T> {
 		QueryRunner qr = new QueryRunner();
 		String sql = "delete from " + classT.getSimpleName().toLowerCase() + " where " + idField.getName() + " = ?";
 		Object[] params = {id};
+		System.out.println(sql);
 		int rows = qr.update(C3P0Utils.getConnnection(), sql, params);
 		return rows;
 	}
@@ -109,6 +153,7 @@ public abstract class BaseDaoImpl<T> implements BaseDao<T> {
 		}
 		paramList.add(getProperty(t, idField));
 		sql += "where " + idField.getName() + "=?";
+		System.out.println(sql);
 
 		Object[] params = paramList.toArray();
 		int rows = qr.update(C3P0Utils.getConnnection(), sql, params);
@@ -153,15 +198,7 @@ public abstract class BaseDaoImpl<T> implements BaseDao<T> {
 		try {
 			Method getter = classT.getMethod(getterName);
 			return getter.invoke(t);
-		} catch (NoSuchMethodException e) {
-			e.printStackTrace();
-		} catch (SecurityException e) {
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-			e.printStackTrace();
-		} catch (InvocationTargetException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return null;

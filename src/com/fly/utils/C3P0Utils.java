@@ -27,9 +27,25 @@ public class C3P0Utils {
 	public static void closeConnection() throws SQLException {
 		Connection conn = threadLocal.get();
 		if(conn != null){
+			conn.setAutoCommit(true);
 			conn.close();
 			threadLocal.remove();
 		}
+	}
+
+	public static void beginTransaction() throws SQLException {
+		Connection connnection = getConnnection();
+		connnection.setAutoCommit(false);
+	}
+	
+	public static void commitTransaction() throws SQLException {
+		Connection connnection = getConnnection();
+		connnection.commit();
+	}
+	
+	public static void rollbackTransaction() throws SQLException {
+		Connection connnection = getConnnection();
+		connnection.rollback();
 	}
 
 }

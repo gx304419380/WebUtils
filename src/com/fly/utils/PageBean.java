@@ -17,13 +17,13 @@ public class PageBean<T> implements Serializable {
     private int pageNumber;
 
     // 4.总记录数(查询得到)
-    private int totalRecord;
+    private int total;
 
     // 5.总页码(计算)
     private int totalPage;
 
     // 6.存放查询出来所有商品信息的结果对象
-    private List<T> result;
+    private List<T> rows;
 
     public int getStartIndex() {
         return (this.getPageNumber() - 1) * this.getPageSize();
@@ -49,43 +49,43 @@ public class PageBean<T> implements Serializable {
         this.pageNumber = pageNumber;
     }
 
-    public int getTotalRecord() {
-        return totalRecord;
+    public int getTotal() {
+        return total;
     }
 
-    public void setTotalRecord(int totalRecord) {
-        this.totalRecord = totalRecord;
+    public void setTotal(int total) {
+        this.total = total;
     }
 
     public int getTotalPage() {
-        return this.getTotalRecord() % this.getPageSize() == 0 ? (this.getTotalRecord() / this.getPageSize())
-                : (this.getTotalRecord() / this.getPageSize() + 1);
+        return this.getTotal() % this.getPageSize() == 0 ? (this.getTotal() / this.getPageSize())
+                : (this.getTotal() / this.getPageSize() + 1);
     }
 
     public void setTotalPage(int totalPage) {
         this.totalPage = totalPage;
     }
+    
+    public List<T> getRows() {
+		return rows;
+	}
 
-    public List<T> getResult() {
-        return result;
-    }
+	public void setRows(List<T> rows) {
+		this.rows = rows;
+	}
 
-    public void setResult(List<T> result) {
-        this.result = result;
-    }
-
-    public PageBean() {
+	public PageBean() {
 
     }
     
     public int getSize() {
-    	return this.result.size();
+    	return this.rows.size();
     }
 
 	@Override
 	public String toString() {
 		return "PageBean [startIndex=" + startIndex + ", pageSize=" + pageSize + ", pageNumber=" + pageNumber
-				+ ", totalRecord=" + totalRecord + ", totalPage=" + totalPage + ", result=" + result + "]";
+				+ ", totalRecord=" + total + ", totalPage=" + totalPage + ", result=" + rows + "]";
 	}
     
     

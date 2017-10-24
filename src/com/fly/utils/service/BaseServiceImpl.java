@@ -1,11 +1,19 @@
-package com.fly.utils;
+package com.fly.utils.service;
 
 import java.sql.SQLException;
 import java.util.List;
 
+import com.fly.utils.PageBean;
+import com.fly.utils.dao.BaseDao;
+
 public abstract class BaseServiceImpl<T> implements BaseService<T>{
 
 	public abstract BaseDao<T> getDao();
+	
+	@Override
+	public int getCount() throws SQLException {
+		return getDao().getCount();
+	}
 	
 	@Override
 	public T getEntityById(Object id) throws SQLException {
@@ -18,8 +26,12 @@ public abstract class BaseServiceImpl<T> implements BaseService<T>{
 	}
 	
 	@Override
-	public List<T> getAllEntitiesForPage(PageBean<T> pageBean) throws SQLException {
-		return getDao().getAllEntitiesForPage(pageBean);
+	public PageBean<T> getEntitiesForPage(PageBean<T> pageBean) throws SQLException {
+		int total = getDao().getCount();
+		List<T> rows = getDao().getEntitiesForPage(pageBean);
+		pageBean.setTotal(total);
+		pageBean.setRows(rows);
+		return pageBean;
 	}
 
 	@Override
@@ -35,6 +47,11 @@ public abstract class BaseServiceImpl<T> implements BaseService<T>{
 	@Override
 	public int saveEntity(T t) throws SQLException {
 		return getDao().saveEntity(t);
+	}
+	
+	@Override
+	public List<T> getEntitiesBySql(String sql) throws SQLException {
+		return getDao().getEntitiesBySql(sql);
 	}
 
 }
